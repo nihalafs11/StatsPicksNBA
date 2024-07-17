@@ -23,6 +23,8 @@ Setting Up the Environment
    ```
 
 Database Setup
+
+
 4. Create database migrations:
    ```
    python manage.py makemigrations
@@ -44,6 +46,8 @@ Database Setup
    ```
 
 Running the Server
+
+
 8. Start the web server:
    ```
    python manage.py runserver
