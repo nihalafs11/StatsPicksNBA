@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="prediction-container">
+    <form id="playerPredictionForm" method="post" class="prediction-form">
+        {% csrf_token %}
+        <div class="team-selection-section">
+            <div class="team-selection home-team">
+                <img src="" alt="Player Image" id="playerImage" class="player-logo">
+                <label for="id_player_name">PLAYER NAME</label>
+                {{ form.player_name }}
+                {{ form.player_name.errors }}
+            </div>
+            <div class="vs-section">VS.</div>
+            <div class="team-selection away-team">
+                <img src="" alt="Opponent Team Logo" id="opponentTeamLogo" class="team-logo">
+                <label for="id_opponent_team">OPPONENT TEAM</label>
+                {{ form.opponent_team }}
+                {{ form.opponent_team.errors }}
+            </div>
+        </div>
+        <div class="vegas-line-section">
+            <div class="vegas-line-label">PREDICTED OVER SCORE</div>
+            <div class="vegas-line-input">
+                {{ form.score_threshold }}
+                {{ form.score_threshold.errors }}
+            </div>            
+        </div>
+        <div class="button-container">
+            <button type="submit" class="predict-button">Predict</button>
+        </div>      
+    </form>
+</div>
+
+<div id="predictionResult" class="prediction-result"></div>
+
+<div id="resultModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <img src="" alt="Player Image" id="modalPlayerImage" class="player-logo">
+        <p id="modalPlayerName" class="vegas-line-label">Player Name</p>
+        <hr>
+        <div id="loading" class="loading">Loading...</div>
+        <div id="resultContent" class="hidden">
+            <p id="accuracy"></p>
+            <p id="precision"></p>
+            <p id="recall"></p>
+            <p id="f1score"></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/playerpoints.css' %}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.django-select2').select2();
+    $('#resultModal').hide();
+
+        function updatePlayerImage(playerId) {
+        if (playerId) {
+            $.getJSON('/playerpoints/api/get_player_image_url/', {player_id: playerId}, function(data) {
+                if (data.picture_url) {
+                    $('#playerImage').hide().attr('src', data.picture_url).fadeIn(300);
+                    $('#modalPlayerImage').attr('src', data.picture_url);  
+                    $('#modalPlayerName').text($('#id_player_name option:selected').text());  
+                } else {
+                    $('#playerImage').attr('src', '');
+                    $('#modalPlayerImage').attr('src', '');
+                }
+            }).fail(function() {
+                console.error("Error: Could not retrieve player image.");
+                $('#playerImage').attr('src', '');
+                $('#modalPlayerImage').attr('src', '');
+            });
+        }
+    }
+
+
+    $('#id_player_name').on('change', function() {
+        var playerId = $(this).val();  
+        updatePlayerImage(playerId); 
+    });
+
+    $('#id_opponent_team').on('change', function() {
+        var teamInput = $(this).val();
+        $.ajax({
+            url: "{% url 'overunder:get_team_logo' %}",
+            type: 'GET',
+            data: { 'team_input': teamInput },
+            success: function(data) {
+                $('#opponentTeamLogo').hide().attr('src', data.logo_url).fadeIn(300);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching logo:', error);
+                $('#opponentTeamLogo').attr('src', ''); 
+            }
+        });
+    });
+
+    $('#id_player_name').val('269').trigger('change'); 
+    $('#id_opponent_team').val('17').trigger('change');
+
+    $('#playerPredictionForm').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $('#resultModal').css('display', 'block');
+        $('#loading').show();
+        $('#resultContent').hide().children('p').removeClass('active'); 
+        
+        $.ajax({
+            url: "{% url 'playerpoints:player_predictions' %}",
+            type: "POST",
+            data: formData,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+            },
+            success: function(data) {
+                $('#loading').hide();
+                if (data.error) {
+                    $('#resultContent').html(`<p>Error: ${data.error}</p>`).show();
+                } else {
+                    $('#accuracy').text("Accuracy: " + data.accuracy + "%").addClass('active');
+                    $('#precision').text("Precision: " + data.precision + "%").addClass('active');
+                    $('#recall').text("Recall: " + data.recall + "%").addClass('active');
+                    $('#f1score').text("F1-Score: " + data.f1_score + "%").addClass('active');
+                    $('#resultContent').show();
+                }
+                $('html, body').animate({
+                    scrollTop: $('#resultModal').offset().top
+                }, 1000);
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                $('#loading').hide();
+                $('#resultContent').html(`<p>Error: An error occurred</p>`).show();
+            }
+        });
+    });
+    
+    $('.close-button').on('click', function() {
+        $('#resultModal').css('display', 'none');
+    });
+
+
+    $(window).on('click', function(event) {
+        if ($(event.target).is('#resultModal')) {
+            $('#resultModal').css('display', 'none');
+        }
+    });
+});
+</script>
+{% endblock %}

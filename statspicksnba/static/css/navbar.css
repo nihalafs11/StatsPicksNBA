@@ -1,0 +1,132 @@
+/* Reset any default margins and padding */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.navbar {
+    background-color: #121212; /* Updated background color */
+    color: white;
+    display: flex;
+    justify-content: space-between; /* Space between logo and nav links */
+    align-items: center; /* Vertically center items in the navbar */
+    padding: 20px 45px; /* Adjusted padding */
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    position: fixed; /* To make the navbar stay at the top */
+    left: 50%; /* Center the navbar */
+    transform: translateX(-50%); /* Adjust based on the navbar's width to ensure it's centered */
+    width: 80%; /* Set the desired width */
+    top: 0; /* To connect to the top of the page */
+    z-index: 10; /* To ensure it's above all other content */
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.5); /* Add shadow to the navbar */
+    position: relative; /* Needed for pseudo-elements */
+}
+
+.navbar:before {
+    content: ''; /* Necessary for the element to display */
+    position: absolute;
+    top: 12%; /* Positioning the line lower */
+    left: 0;
+    right: 0;
+    height: 1px; /* Subtle line height */
+    background-color: white; /* Line color */
+}
+
+.navbar .logo, .navbar .navbar-item {
+    font-weight: 700; /* Bold weight for Montserrat */
+    font-family: 'Montserrat', sans-serif; /* Montserrat font */
+    font-size: 24px; /* Adjust the size as necessary for logo */
+}
+
+.navbar-links {
+    display: flex;
+    justify-content: flex-end; /* Align nav items to the right */
+}
+
+.navbar .navbar-item {
+    position: relative; /* Required for positioning pseudo-elements */
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    margin-left: 15px;
+    font-size: 16px;
+    transition: color 0.3s ease; /* Transition for color change */
+}
+
+/* Underline effect */
+.navbar .navbar-item::after {
+    content: '';
+    position: absolute;
+    bottom: 1px; /* Position under the text */
+    left: 0;
+    width: 0; /* Start with no underline */
+    height: 2px; /* Thickness of the underline */
+    background-color: white; /* Color of the underline */
+    transition: width 0.3s ease; /* Animation for the underline */
+}
+
+/* Hover effect - expands the underline */
+.navbar .navbar-item:hover::after {
+    width: 100%; /* Full width underline on hover */
+}
+
+/* Adjusting hover effect for color transition */
+.navbar .navbar-item:hover {
+    color: white; /* Maintain text color or change as desired */
+    background-color: transparent; /* Optional: change background color on hover */
+}
+
+/* Add to navbar.css */
+.hamburger-menu {
+    display: none; /* Hidden by default */
+    cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.hamburger-menu div {
+    width: 30px;
+    height: 3px;
+    background-color: white;
+}
+
+/* Additional styling for mobile view */
+@media (max-width: 768px) {
+    .navbar-links {
+        display: none; /* Hide by default in mobile view */
+        flex-direction: column;
+        width: 100%;
+        position: absolute;
+        background-color: #121212; /* Your desired background */
+        top: 60px; /* Adjust based on your navbar's height */
+        left: 0;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        padding: 20px 0; /* Add some padding */
+        align-items: center; /* Center align the items */
+    }
+
+    .navbar-links.active {
+        display: flex; /* Show when active */
+    }
+
+    .hamburger-menu {
+        display: flex; /* Only show hamburger in mobile view */
+    }
+
+    .navbar .logo {
+        font-size: 20px; /* Adjusted font size for mobile (logo) */
+        text-align: center; /* Center the text */
+        width: 100%; /* Ensure full width to align text center */
+        padding: 12px 0; /* Adjust padding to your liking */
+    }
+
+    .navbar .navbar-item {
+        font-size: 14px; /* Adjusted font size for mobile (navbar items) */
+        text-align: center; /* Center the text */
+        width: 100%; /* Ensure full width to align text center */
+        padding: 8px 0; /* Adjust padding to your liking */
+    }
+}

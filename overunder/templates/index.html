@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="prediction-container">
+    <form id="predictionForm" method="post" class="prediction-form">
+        {% csrf_token %}
+        <div class="team-selection-section">
+            <div class="team-selection home-team">
+                <img src="{% static 'nba_team_logos/denver_nuggets_logo.svg' %}" alt="Home Team Logo" id="homeTeamLogo" class="team-logo">
+                <label for="id_team_home_name">HOME TEAM</label>
+                {{ form.team_home_name }}
+            </div>
+            <div class="vs-section">VS.</div>
+            <div class="team-selection away-team">
+                <img src="{% static 'nba_team_logos/miami_heat_logo.svg' %}" alt="Away Team Logo" id="awayTeamLogo" class="team-logo">
+                <label for="id_team_away_name">AWAY TEAM</label>
+                {{ form.team_away_name }}
+            </div>
+        </div>
+        <div class="vegas-line-section">
+            <div class="vegas-line-label">VEGAS LINE</div>
+            <div class="vegas-line-input">
+                <input type="text" id="vegas_line" name="vegas_line" class="vegas-line-input-box">
+            </div>            
+        </div>
+        <div class="button-container">
+            <button type="submit" class="predict-button">Predict</button>
+        </div>        
+    </form>
+</div>
+
+<div id="resultModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <div class="team-logos">
+            <img src="" alt="Home Team Logo" id="modalHomeTeamLogo" class="team-logos-result">
+            <img src="" alt="Away Team Logo" id="modalAwayTeamLogo" class="team-logos-result">
+        </div>
+        <hr>
+        <div id="loading" class="loading">Loading...</div>
+        <span class="close-button">&times;</span>
+        <div id="resultContent" class="hidden">
+            <p id="predictedPoints"></p>
+            <p id="percentDiff"></p>
+            <p id="line"></p>
+            <p id="probability"></p>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/overunder.css' %}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.django-select2').select2();
+        $('#resultModal').hide();
+
+        function setDefaultValues() {
+            var defaultHome = 'nuggets'; 
+            var defaultAway = 'heat'; 
+            $('#id_team_home_name').val(defaultHome).trigger('change');
+            $('#id_team_away_name').val(defaultAway).trigger('change');
+        }
+
+        setTimeout(setDefaultValues, 10); 
+
+        $('.django-select2').on('change', function() {
+            var teamInput = $(this).val();
+            var isHome = $(this).attr('id') === 'id_team_home_name';
+            var targetImg = isHome ? '#homeTeamLogo' : '#awayTeamLogo';
+            $.ajax({
+                url: '{% url "overunder:get_team_logo" %}', 
+                type: 'GET',
+                data: { 'team_input': teamInput },
+                success: function(data) {
+                    $(targetImg).hide().attr('src', data.logo_url).fadeIn(300); 
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching logo:', error);
+                    $(targetImg).hide(); 
+                }
+            });
+        });
+
+    $('#predictionForm').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $('#resultModal').show(); 
+        $('#loading').show();
+        $('#resultContent').hide();
+
+        $.ajax({
+            url: "", 
+            type: "POST",
+            data: formData,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+            },
+            success: function(data) {
+                $('#loading').hide();
+                if (data.error) {
+                    $('#resultContent').html(`<p>Error: ${data.error}</p>`).show();
+                } else {
+                    $('#modalHomeTeamLogo').attr('src', $('#homeTeamLogo').attr('src'));
+                    $('#modalAwayTeamLogo').attr('src', $('#awayTeamLogo').attr('src'));
+                    $('#predictedPoints').text(`Predicted Points: ${data.predicted_points}`).addClass('active');
+                    $('#percentDiff').text(`Percent Difference: ${data.percent_diff}`).addClass('active');
+                    $('#line').text(`Line: ${data.line}`).addClass('active');
+                    $('#probability').text(`Probability: ${data.probability}%`).addClass('active');
+                    $('#resultContent').show();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                $('#loading').hide();
+                $('#resultContent').html(`<p>Error: An error occurred</p>`).show();
+            }
+        });
+    });
+    $('.close-button').click(function() {
+        $('#resultModal').hide();
+    });
+
+    $(window).click(function(event) {
+        if ($(event.target).is('#resultModal')) {
+            $('#resultModal').hide();
+        }
+    });
+});
+</script>
+{% endblock %}
